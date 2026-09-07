@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useAuthStore } from '@/stores/auth'
-import { useOcorrenciasStore } from '@/stores/ocorrencias'
+import { useCidadeStore } from '@/stores/cidade'
 import * as authService from '@/services/auth'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
@@ -11,16 +11,19 @@ import AppField from '@/components/ui/AppField.vue'
 const router = useRouter()
 const { user, isLoggedIn, logout } = useAuth()
 const authStore = useAuthStore()
-const ocorrencias = useOcorrenciasStore()
+const cidadeStore = useCidadeStore()
 
 const aba = ref('perfil') // perfil | senha
 const novaSenha = ref('')
 const mensagem = ref('')
 const mensagemTipo = ref('ok') // ok | erro
+const stats = ref({ inCity: 0, resolved: 0, open: 0 })
 
 onMounted(() => {
   if (!isLoggedIn.value) router.push('/app/mapa')
-  if (ocorrencias.lista.length === 0) ocorrencias.carregar().catch(() => {})
+  authService.estatisticasUsuario(cidadeStore.cidadeAtual.nome)
+    .then((s) => { stats.value = s })
+    .catch(() => {})
 })
 
 function iniciais(email) {
@@ -72,19 +75,15 @@ function sair() {
     <!-- Stats rápidos -->
     <div class="mx-5 -mt-10 grid grid-cols-3 gap-3 z-10 relative">
       <div class="rounded-2xl bg-white shadow-sm border border-gray-100 p-4 text-center">
-        <p class="text-2xl font-extrabold text-gray-800">{{ ocorrencias.lista.length }}</p>
+        <p class="text-2xl font-extrabold text-gray-800">{{ stats.inCity }}</p>
         <p class="text-xs text-gray-400 mt-1">Na cidade</p>
       </div>
       <div class="rounded-2xl bg-white shadow-sm border border-gray-100 p-4 text-center">
-        <p class="text-2xl font-extrabold text-emerald-500">
-          {{ ocorrencias.lista.filter(o => o.status?.name === 'Resolvido').length }}
-        </p>
+        <p class="text-2xl font-extrabold text-emerald-500">{{ stats.resolved }}</p>
         <p class="text-xs text-gray-400 mt-1">Resolvidas</p>
       </div>
       <div class="rounded-2xl bg-white shadow-sm border border-gray-100 p-4 text-center">
-        <p class="text-2xl font-extrabold text-amber-500">
-          {{ ocorrencias.lista.filter(o => o.status?.name === 'Aberto').length }}
-        </p>
+        <p class="text-2xl font-extrabold text-amber-500">{{ stats.open }}</p>
         <p class="text-xs text-gray-400 mt-1">Em aberto</p>
       </div>
     </div>
