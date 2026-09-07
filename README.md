@@ -35,7 +35,15 @@ Adicione `icon-192.png` e `icon-512.png` em `public/icons/` antes de publicar �
 
 ## Deploy
 
-`dist/` é estático e pode ser publicado em GitHub Pages, Vercel, Netlify ou DigitalOcean App Platform.
+Hospedado em **Cloudflare Workers** (config em `wrangler.jsonc`). Deploy automático via
+Cloudflare git integration a cada push em `main`; não há GitHub Actions publicando.
+
+```bash
+npm run deploy   # build + wrangler deploy (uso manual/local)
+```
+
+`VITE_API_URL` de produção é setada à mão no painel do Cloudflare (build env var) — não existe
+proxy do Vite fora do dev local, então precisa ser a URL absoluta do backend.
 
 ## API — pontos importantes (validado contra o OpenAPI real)
 
