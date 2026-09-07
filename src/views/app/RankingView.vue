@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useOcorrenciasStore } from '@/stores/ocorrencias'
+import { maskEmail } from '@/utils/email'
 
 const ocorrencias = useOcorrenciasStore()
 
@@ -18,7 +19,7 @@ const rankingContribuidores = computed(() => {
     if (!counts[userId]) {
       counts[userId] = {
         id: userId,
-        nome: oc.user?.name ?? oc.user?.email ?? `Usuário ${userId}`,
+        nome: oc.user?.name ?? maskEmail(oc.user?.email) ?? `Usuário ${userId}`,
         total: 0,
         resolvidas: 0,
         categorias: {},

@@ -4,6 +4,7 @@ import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import * as ocorrenciasService from '@/services/ocorrencias'
 import * as comentariosService from '@/services/comentarios'
+import { maskEmail } from '@/utils/email'
 import OccurrenceStatus from '@/components/occurrence/OccurrenceStatus.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 
@@ -392,7 +393,7 @@ function iniciais(email) {
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-baseline gap-2 flex-wrap">
-                    <span class="text-xs font-semibold text-gray-700 truncate">{{ c.authorEmail ?? 'Anônimo' }}</span>
+                    <span class="text-xs font-semibold text-gray-700 truncate">{{ c.authorEmail ? maskEmail(c.authorEmail) : 'Anônimo' }}</span>
                     <span class="text-[10px] text-gray-400 flex-shrink-0">{{ formatarData(c.createdAt) }}</span>
                     <button
                       v-if="auth.isAdmin"
