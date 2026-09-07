@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive } from 'vue'
+import { enviarFeedback } from '@/services/feedback'
 
 const form = reactive({ tipo: 'sugestao', mensagem: '', nome: '', email: '' })
 const enviado = ref(false)
@@ -10,9 +11,16 @@ async function enviar() {
   if (!form.mensagem.trim()) { erro.value = 'Escreva sua mensagem antes de enviar.'; return }
   erro.value = ''
   enviando.value = true
-  await new Promise(r => setTimeout(r, 900))
-  enviando.value = false
-  enviado.value = true
+  try {
+    await enviarFeedback(form)
+    enviado.value = true
+  } catch (e) {
+    erro.value = e.response?.status === 429
+      ? 'Você atingiu o limite de envios. Tente novamente mais tarde.'
+      : 'Não foi possível enviar seu feedback. Tente novamente.'
+  } finally {
+    enviando.value = false
+  }
 }
 
 function novoFeedback() {
