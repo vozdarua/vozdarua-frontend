@@ -6,6 +6,8 @@ import OccurrenceStatus from '@/components/occurrence/OccurrenceStatus.vue'
 const ocorrencias = ref([])
 const carregando = ref(true)
 const erro = ref(false)
+const confirmandoId = ref(null)
+const excluindoId = ref(null)
 
 onMounted(() => {
   authService.minhasOcorrencias()
@@ -13,6 +15,22 @@ onMounted(() => {
     .catch(() => { erro.value = true })
     .finally(() => { carregando.value = false })
 })
+
+function pedirConfirmacao(id) {
+  confirmandoId.value = id
+}
+
+function cancelarConfirmacao() {
+  confirmandoId.value = null
+}
+
+function excluir(id) {
+  excluindoId.value = id
+  authService.excluirMinhaOcorrencia(id)
+    .then(() => { ocorrencias.value = ocorrencias.value.filter((o) => o.id !== id) })
+    .catch(() => { erro.value = true })
+    .finally(() => { confirmandoId.value = null; excluindoId.value = null })
+}
 </script>
 
 <template>
@@ -44,7 +62,36 @@ onMounted(() => {
           <OccurrenceStatus :status="item.status" />
         </div>
         <p class="text-sm text-gray-600">{{ item.description }}</p>
-        <span class="text-xs text-gray-400">{{ new Date(item.createdAt).toLocaleDateString() }}</span>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs text-gray-400">{{ new Date(item.createdAt).toLocaleDateString() }}</span>
+
+          <div v-if="confirmandoId === item.id" class="flex items-center gap-3">
+            <button
+              type="button"
+              class="text-xs text-gray-500"
+              :disabled="excluindoId === item.id"
+              @click="cancelarConfirmacao"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="text-xs font-semibold text-red-500 disabled:opacity-50"
+              :disabled="excluindoId === item.id"
+              @click="excluir(item.id)"
+            >
+              Confirmar exclusão?
+            </button>
+          </div>
+          <button
+            v-else
+            type="button"
+            class="text-xs text-red-500"
+            @click="pedirConfirmacao(item.id)"
+          >
+            Excluir
+          </button>
+        </div>
       </div>
     </div>
   </div>

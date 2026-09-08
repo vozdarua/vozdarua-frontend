@@ -29,6 +29,10 @@ export function minhasOcorrencias() {
   return api.get('/user/me/issues').then((r) => r.data)
 }
 
+export function excluirMinhaOcorrencia(id) {
+  return api.delete(`/user/me/issues/${id}`).then((r) => r.data)
+}
+
 export function atualizarUsuario(id, payload) {
   return api.put(`/user/${id}`, payload).then((r) => r.data)
 }
