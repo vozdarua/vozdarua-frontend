@@ -124,7 +124,7 @@ function alternarModo() {
 
     <!-- Formulário -->
     <form class="flex flex-col gap-3 mb-4" @submit="onSubmit">
-      <AppField v-if="modo === 'cadastro'" v-model="phone" label="Telefone" :error="errors.phone" />
+      <AppField v-if="modo === 'cadastro'" v-model="phone" label="Telefone" type="tel" mask="phone" placeholder="(11) 99999-9999" :error="errors.phone" />
       <AppField v-model="email" label="E-mail" type="email" :error="errors.email" />
       <AppField v-model="password" label="Senha" type="password" :error="errors.password" />
 

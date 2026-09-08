@@ -131,6 +131,7 @@ const onSubmit = handleSubmit(async (values) => {
               v-model="phone"
               label="Telefone"
               type="tel"
+              mask="phone"
               placeholder="(11) 99999-9999"
               :error="errors.phone"
             />

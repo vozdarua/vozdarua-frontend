@@ -7,8 +7,9 @@ const props = defineProps({
   type: { type: String, default: 'text' },
   placeholder: { type: String, default: ' ' }, // espaço intencional para :placeholder-shown funcionar
   error: { type: String, default: '' },
+  mask: { type: String, default: '' }, // 'phone' -> (99) 99999-9999
 })
-defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue'])
 
 const fieldId = useId()
 const errorId = computed(() => `${fieldId}-error`)
@@ -17,6 +18,23 @@ const hasValue = computed(() => props.modelValue && props.modelValue.length > 0)
 const senhaVisivel = ref(false)
 const isPassword = computed(() => props.type === 'password')
 const inputType = computed(() => isPassword.value && senhaVisivel.value ? 'text' : props.type)
+
+function formatPhone(digits) {
+  const d = digits.slice(0, 11)
+  if (d.length <= 2) return d
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
+function onInput(e) {
+  if (props.mask === 'phone') {
+    const formatted = formatPhone(e.target.value.replace(/\D/g, ''))
+    e.target.value = formatted
+    emit('update:modelValue', formatted)
+  } else {
+    emit('update:modelValue', e.target.value)
+  }
+}
 </script>
 
 <template>
@@ -31,7 +49,7 @@ const inputType = computed(() => isPassword.value && senhaVisivel.value ? 'text'
         :aria-invalid="!!error || undefined"
         class="peer w-full rounded-xl border border-gray-200 px-3.5 pt-5 pb-2.5 text-sm text-gray-800 outline-none transition-all duration-150 focus:border-teal focus:ring-2 focus:ring-teal/20 placeholder-transparent"
         :class="[error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : '', isPassword ? 'pr-10' : '']"
-        @input="$emit('update:modelValue', $event.target.value)"
+        @input="onInput"
       />
       <button
         v-if="isPassword"
