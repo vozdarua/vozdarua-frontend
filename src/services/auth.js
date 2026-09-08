@@ -25,6 +25,10 @@ export function estatisticasUsuario(city) {
   return api.get('/user/me/stats', { params: { city } }).then((r) => r.data)
 }
 
+export function minhasOcorrencias() {
+  return api.get('/user/me/issues').then((r) => r.data)
+}
+
 export function atualizarUsuario(id, payload) {
   return api.put(`/user/${id}`, payload).then((r) => r.data)
 }
