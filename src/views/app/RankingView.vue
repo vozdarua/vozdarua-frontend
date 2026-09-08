@@ -57,7 +57,7 @@ const avatarColors = [
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-y-auto pb-6">
+  <div class="flex flex-col h-full overflow-y-auto pb-6 max-w-2xl mx-auto w-full">
 
     <!-- Header -->
     <div class="px-5 pt-7 pb-4">

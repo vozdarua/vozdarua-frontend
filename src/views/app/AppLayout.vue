@@ -5,6 +5,7 @@ import { useAuth } from '@/composables/useAuth'
 import AuthModal from '@/components/auth/AuthModal.vue'
 import UserMenu from '@/components/auth/UserMenu.vue'
 import WelcomeModal from '@/components/ui/WelcomeModal.vue'
+import InstallPromptModal from '@/components/ui/InstallPromptModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -213,5 +214,6 @@ function isActive(path) {
 
     <AuthModal :open="authModal" :initial-mode="authMode" @close="authModal = false" />
     <WelcomeModal />
+    <InstallPromptModal />
   </div>
 </template>

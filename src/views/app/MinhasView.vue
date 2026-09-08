@@ -34,7 +34,7 @@ function excluir(id) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 p-5">
+  <div class="flex flex-col gap-3 p-5 max-w-2xl mx-auto w-full">
     <h1 class="text-lg font-bold text-gray-800">Minhas ocorrências</h1>
 
     <div v-if="carregando" class="flex flex-col gap-3">

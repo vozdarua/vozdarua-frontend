@@ -56,7 +56,7 @@ function sair() {
 </script>
 
 <template>
-  <div class="flex flex-col min-h-full">
+  <div class="flex flex-col min-h-full max-w-2xl mx-auto w-full">
     <!-- Header de perfil -->
     <div class="bg-teal-dark text-white px-6 pt-10 pb-20">
       <div class="flex items-center gap-5">

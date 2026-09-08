@@ -184,7 +184,7 @@ function iniciais(email) {
       role="dialog"
       :aria-label="`Detalhes da ocorrência: ${ocorrencia.description}`"
       aria-modal="true"
-      class="fixed right-0 top-[52px] z-[2500] flex flex-col bg-white shadow-2xl overflow-hidden" style="height: calc(100% - 52px)"
+      class="fixed right-0 top-16 lg:top-[52px] h-[calc(100%_-_4rem)] lg:h-[calc(100%_-_52px)] z-[2500] flex flex-col bg-white shadow-2xl overflow-hidden"
       :class="ui.drawerFullscreen ? 'w-full' : 'w-[92%] max-w-sm'"
     >
       <!-- Header fixo: fechar + categoria + status + navegação entre pins -->
