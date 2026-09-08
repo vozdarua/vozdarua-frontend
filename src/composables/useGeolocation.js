@@ -53,8 +53,17 @@ export function useGeolocation() {
     const { data } = await axios.get(`${NOMINATIM_URL}/search`, {
       params: { q, format: 'json', limit: 1 },
     })
-    if (!data || data.length === 0) throw new Error('Endereço não encontrado')
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    // Array.isArray (não só "data.length === 0"): se NOMINATIM_URL vier undefined (env var
+    // de build não setada em produção), a URL vira relativa ("undefined/search") e o fallback
+    // de SPA devolve o index.html com 200 - uma STRING não-vazia passaria pelo length===0 e
+    // data[0] seria só o primeiro caractere, gerando lat/lng NaN sem nunca lançar erro.
+    const result = Array.isArray(data) ? data[0] : null
+    const lat = parseFloat(result?.lat)
+    const lng = parseFloat(result?.lon)
+    if (!result || Number.isNaN(lat) || Number.isNaN(lng)) {
+      throw new Error('Endereço não encontrado')
+    }
+    return { lat, lng }
   }
 
   return { pedirPermissao, reverseGeocode, geocodeAddress, store }
