@@ -1,46 +1,36 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useOcorrenciasStore } from '@/stores/ocorrencias'
-import { maskEmail } from '@/utils/email'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useCidadeStore } from '@/stores/cidade'
 import * as cidadesService from '@/services/cidades'
+import * as ocorrenciasService from '@/services/ocorrencias'
 
-const ocorrencias = useOcorrenciasStore()
+const cidadeStore = useCidadeStore()
+const carregando = ref(true)
 
-onMounted(() => {
-  if (!ocorrencias.lista.length) ocorrencias.carregar().catch(() => {})
-  cidadesService.rankingCidades().then((r) => { rankingCidadesRaw.value = r }).catch(() => {})
+function carregarContribuidores(cityId) {
+  return ocorrenciasService.rankingContribuidores(cityId).then((r) => { rankingContribuidoresRaw.value = r })
+}
+
+onMounted(async () => {
+  await cidadeStore.init()
+  Promise.all([
+    carregarContribuidores(cidadeStore.cidadeAtual.id),
+    cidadesService.rankingCidades().then((r) => { rankingCidadesRaw.value = r }),
+  ]).finally(() => { carregando.value = false })
 })
 
-// Top contribuidores por número de ocorrências registradas (não anônimas)
-const rankingContribuidores = computed(() => {
-  const counts = {}
-  for (const oc of ocorrencias.lista) {
-    if (oc.anonymous) continue
-    const userId = oc.user?.id
-    if (!userId) continue
-    if (!counts[userId]) {
-      counts[userId] = {
-        id: userId,
-        nome: oc.user?.name ?? maskEmail(oc.user?.email) ?? `Usuário ${userId}`,
-        total: 0,
-        resolvidas: 0,
-        categorias: {},
-      }
-    }
-    counts[userId].total++
-    if (oc.status?.name === 'Resolvido') counts[userId].resolvidas++
-    const cat = oc.category?.name ?? 'Outros'
-    counts[userId].categorias[cat] = (counts[userId].categorias[cat] ?? 0) + 1
-  }
-  return Object.values(counts)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 20)
-    .map(u => ({
-      ...u,
-      catPrincipal: Object.entries(u.categorias).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—',
-      taxaResolucao: u.total > 0 ? Math.round((u.resolvidas / u.total) * 100) : 0,
-    }))
-})
+watch(() => cidadeStore.cidadeAtual.id, (id) => { if (id) carregarContribuidores(id).catch(() => {}) })
+
+// Top contribuidores por número de ocorrências (agregado no backend via GET /issues/ranking)
+const rankingContribuidoresRaw = ref([])
+const rankingContribuidores = computed(() =>
+  rankingContribuidoresRaw.value.map(c => ({
+    id: c.id,
+    nome: c.email, // já mascarado pelo backend
+    total: c.total,
+    taxaResolucao: c.total > 0 ? Math.round((c.resolved / c.total) * 100) : 0,
+  }))
+)
 
 // Cidades com mais ocorrências (agregado no backend via GET /cities/ranking)
 const rankingCidadesRaw = ref([])
@@ -72,11 +62,11 @@ const avatarColors = [
     <!-- Header -->
     <div class="px-5 pt-7 pb-4">
       <h1 class="text-xl font-bold text-gray-800">Ranking</h1>
-      <p class="text-sm text-gray-400 mt-1">Baseado nas ocorrências registradas em São José dos Campos</p>
+      <p class="text-sm text-gray-400 mt-1">Baseado nas ocorrências registradas em {{ cidadeStore.cidadeAtual.nome }}</p>
     </div>
 
     <!-- Skeleton -->
-    <template v-if="ocorrencias.carregando">
+    <template v-if="carregando">
       <div class="flex flex-col gap-3 px-5">
         <div v-for="i in 5" :key="i" class="flex items-center gap-3">
           <div class="w-8 h-5 bg-gray-100 rounded animate-pulse" />
@@ -126,7 +116,6 @@ const avatarColors = [
             <!-- Info -->
             <div class="flex-1 min-w-0">
               <p class="text-base font-semibold text-gray-800 truncate">{{ usuario.nome }}</p>
-              <p class="text-sm text-gray-400 truncate">{{ usuario.catPrincipal }}</p>
               <!-- Barra de progresso relativa -->
               <div class="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden w-full max-w-[120px]">
                 <div

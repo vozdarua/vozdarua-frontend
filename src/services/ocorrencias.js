@@ -30,6 +30,10 @@ export function buscarPorEndereco(params) {
   return api.get('/issues/address', { params }).then((r) => r.data)
 }
 
+export function rankingContribuidores(cityId) {
+  return api.get('/issues/ranking', { params: cityId ? { cityId } : {} }).then((r) => r.data)
+}
+
 export function uploadImagem(file) {
   const form = new FormData()
   form.append('file', file)
