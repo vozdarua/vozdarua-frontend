@@ -156,7 +156,7 @@ function isActive(path) {
     </header>
 
     <!-- Conteúdo principal -->
-    <main class="flex-1 flex flex-col pb-16 lg:pb-0">
+    <main class="flex-1 flex flex-col overflow-y-auto pb-16 lg:pb-0">
       <router-view />
     </main>
 

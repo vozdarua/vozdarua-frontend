@@ -60,24 +60,33 @@
       <div class="grid grid-cols-1 gap-3">
         <div class="flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-3">
           <div class="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center text-base font-bold text-teal">M</div>
-          <div>
+          <div class="flex-1">
             <p class="text-sm font-semibold text-gray-800">Marcell Marra</p>
             <p class="text-xs text-gray-400">Produto & desenvolvimento</p>
           </div>
+          <a href="https://www.linkedin.com/in/marcell-marra/" target="_blank" rel="noopener" aria-label="LinkedIn de Marcell Marra" class="text-gray-400 hover:text-[#0A66C2] flex-shrink-0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114 20.452H3.56V9h3.554v11.452z"/></svg>
+          </a>
         </div>
         <div class="flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-3">
           <div class="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-base font-bold text-violet-500">PH</div>
-          <div>
+          <div class="flex-1">
             <p class="text-sm font-semibold text-gray-800">Pedro Hos</p>
-            <p class="text-xs text-gray-400">Estratégia & comunicação</p>
+            <p class="text-xs text-gray-400">Produto & desenvolvimento</p>
           </div>
+          <a href="https://www.linkedin.com/in/pedrohosilva/" target="_blank" rel="noopener" aria-label="LinkedIn de Pedro Hos" class="text-gray-400 hover:text-[#0A66C2] flex-shrink-0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114 20.452H3.56V9h3.554v11.452z"/></svg>
+          </a>
         </div>
         <div class="flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-3">
           <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-base font-bold text-amber-500">PL</div>
-          <div>
+          <div class="flex-1">
             <p class="text-sm font-semibold text-gray-800">Pedro Leite</p>
             <p class="text-xs text-gray-400">Tecnologia & dados</p>
           </div>
+          <a href="https://www.linkedin.com/in/pedro-valentim-tech/" target="_blank" rel="noopener" aria-label="LinkedIn de Pedro Leite" class="text-gray-400 hover:text-[#0A66C2] flex-shrink-0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114 20.452H3.56V9h3.554v11.452z"/></svg>
+          </a>
         </div>
         <div class="flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-3">
           <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-base">🙌</div>
