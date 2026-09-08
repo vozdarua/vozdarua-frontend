@@ -1,8 +1,11 @@
 import api from './api'
 
-export function listarOcorrencias(cityId) {
-  const params = cityId ? { cityId } : {}
-  return api.get('/issues', { params }).then((r) => r.data)
+export function listarOcorrencias(cityId, { page = 0, size = 500 } = {}) {
+  // ponytail: size=500 cobre o mapa (precisa de tudo da cidade de uma vez);
+  // sobe pra fetch-em-loop ou busca por viewport se uma cidade passar disso
+  return api
+    .get('/issues', { params: { page, size, ...(cityId ? { cityId } : {}) } })
+    .then((r) => r.data.content)
 }
 
 export function buscarOcorrencia(id) {
@@ -26,8 +29,10 @@ export function marcarResolvida(id) {
   return api.put(`/issues/${id}/resolve`).then((r) => r.data)
 }
 
-export function buscarPorEndereco(params) {
-  return api.get('/issues/address', { params }).then((r) => r.data)
+export function metricasPorCidade(cityId, neighborhood) {
+  return api
+    .get('/issues/metrics', { params: { cityId, ...(neighborhood ? { neighborhood } : {}) } })
+    .then((r) => r.data)
 }
 
 export function rankingContribuidores(cityId) {

@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, toRef } from 'vue'
 import { useCidadeStore } from '@/stores/cidade'
+import { useCityMetricsBreakdown } from '@/composables/useCityMetricsBreakdown'
 import CityPickerModal from './CityPickerModal.vue'
 
 const props = defineProps({
-  ocorrencias: { type: Array, default: () => [] },
+  metricas: { type: Object, default: null },
   carregando: { type: Boolean, default: false },
 })
 
@@ -12,61 +13,12 @@ const cidadeStore = useCidadeStore()
 const showModal = ref(false)
 const expanded = ref(false)
 
-const total = computed(() => props.ocorrencias.length)
-
-const porStatus = computed(() => {
-  const counts = {}
-  for (const oc of props.ocorrencias) {
-    const nome = oc.status?.name ?? 'Desconhecido'
-    counts[nome] = (counts[nome] ?? 0) + 1
-  }
-  return counts
-})
-
-const resolvidas = computed(() => porStatus.value['Resolvido'] ?? 0)
-const taxaResolucao = computed(() =>
-  total.value > 0 ? Math.round((resolvidas.value / total.value) * 100) : 0
-)
+const { total, porStatus, taxaResolucao, porCategoria, porBairro } = useCityMetricsBreakdown(toRef(props, 'metricas'))
 const emAberto = computed(() => porStatus.value['Aberto'] ?? 0)
 const emAnalise = computed(() => porStatus.value['Em análise'] ?? 0)
 
-const porCategoria = computed(() => {
-  const counts = {}
-  for (const oc of props.ocorrencias) {
-    const nome = oc.category?.name ?? 'Sem categoria'
-    counts[nome] = (counts[nome] ?? 0) + 1
-  }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6)
-})
-
-const porBairro = computed(() => {
-  const counts = {}
-  for (const oc of props.ocorrencias) {
-    const nome = oc.address?.neighborhood ?? oc.address?.district ?? 'Não informado'
-    counts[nome] = (counts[nome] ?? 0) + 1
-  }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6)
-})
-
-const porSeveridade = computed(() => {
-  const counts = { Alto: 0, Médio: 0, Baixo: 0 }
-  for (const oc of props.ocorrencias) {
-    const nome = oc.severity?.name
-    if (nome && counts[nome] !== undefined) counts[nome]++
-  }
-  return ['Alto', 'Médio', 'Baixo'].map(nome => ({ nome, total: counts[nome] }))
-})
-
 const maxCategoria = computed(() => porCategoria.value.length > 0 ? porCategoria.value[0][1] : 1)
 const maxBairro    = computed(() => porBairro.value.length    > 0 ? porBairro.value[0][1]    : 1)
-
-const STATUS_CFG = {
-  Aberto:       { cor: '#d97706', icon: '●' },
-  'Em análise': { cor: '#7c3aed', icon: '⟳' },
-  Aceito:       { cor: '#0f766e', icon: '✓' },
-  Resolvido:    { cor: '#059669', icon: '✔' },
-}
-const SEV_BAR = { Alto: 'bg-red-400', Médio: 'bg-amber-400', Baixo: 'bg-emerald-400' }
 
 const startY = ref(null)
 function onTouchStart(e) { startY.value = e.touches[0].clientY }

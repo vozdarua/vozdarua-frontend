@@ -10,6 +10,8 @@ export const useOcorrenciasStore = defineStore('ocorrencias', {
     lista: [],
     filtros: { categoria: null, status: null },
     carregando: false,
+    metricas: null,
+    carregandoMetricas: false,
     selecionada: null,
     rascunho: {
       localizacao: null,
@@ -26,6 +28,14 @@ export const useOcorrenciasStore = defineStore('ocorrencias', {
         this.lista = await ocorrenciasService.listarOcorrencias(cidade)
       } finally {
         this.carregando = false
+      }
+    },
+    async carregarMetricas(cityId) {
+      this.carregandoMetricas = true
+      try {
+        this.metricas = await ocorrenciasService.metricasPorCidade(cityId)
+      } finally {
+        this.carregandoMetricas = false
       }
     },
     selecionar(ocorrencia) {

@@ -29,11 +29,13 @@ watch(() => cidadeStore.cidadeAtual, (cidade) => {
   if (cidade.lat && cidade.lng) mapCenter.value = [cidade.lat, cidade.lng]
   ocorrencias.lista = []
   ocorrencias.carregar(cidade.id).catch(() => {})
+  ocorrencias.carregarMetricas(cidade.id).catch(() => {})
 })
 
 onMounted(async () => {
   await cidadeStore.init()
   ocorrencias.carregar(cidadeStore.cidadeAtual.id).catch(() => {})
+  ocorrencias.carregarMetricas(cidadeStore.cidadeAtual.id).catch(() => {})
   window.addEventListener('resize', onResize)
 })
 onUnmounted(() => window.removeEventListener('resize', onResize))
@@ -70,16 +72,16 @@ onUnmounted(() => window.removeEventListener('resize', onResize))
       <!-- Bottom sheet: só mobile -->
       <CityMetricsSheet
         v-if="isMobile"
-        :ocorrencias="ocorrencias.lista"
-        :carregando="ocorrencias.carregando"
+        :metricas="ocorrencias.metricas"
+        :carregando="ocorrencias.carregandoMetricas"
       />
     </div>
 
     <!-- Painel lateral direito: só desktop -->
     <CityMetricsSidebar
       class="hidden lg:flex"
-      :ocorrencias="ocorrencias.lista"
-      :carregando="ocorrencias.carregando"
+      :metricas="ocorrencias.metricas"
+      :carregando="ocorrencias.carregandoMetricas"
     />
   </div>
 </template>
