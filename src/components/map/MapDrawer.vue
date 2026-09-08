@@ -73,8 +73,8 @@ const jaConfirmou  = ref(false)
 const jaResolveu   = ref(false)
 
 watch(() => props.ocorrencia?.id, () => {
-  confirmacoes.value = props.ocorrencia?.confirmations ?? props.ocorrencia?.upvotes ?? 0
-  resolucoes.value   = props.ocorrencia?.resolvedCount ?? 0
+  confirmacoes.value = props.ocorrencia?.confirmIssue ?? 0
+  resolucoes.value   = props.ocorrencia?.confirmResolve ?? 0
   jaConfirmou.value  = false
   jaResolveu.value   = false
 }, { immediate: true })
