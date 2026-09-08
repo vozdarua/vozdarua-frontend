@@ -6,9 +6,31 @@ const api = axios.create({
   timeout: 15000,
 })
 
+// Identifica este navegador para ações anônimas (confirmar/resolver ocorrência sem login),
+// já que o backend precisa de alguma identidade estável para não deixar a mesma pessoa
+// contar duas vezes. Persistido em localStorage: sobrevive a reloads, não a "modo anônimo"
+// ou troca de navegador — mesmo teto de qualquer identificação sem conta.
+function getAnonId() {
+  try {
+    let id = localStorage.getItem('vozdarua_anon_id')
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem('vozdarua_anon_id', id)
+    }
+    return id
+  } catch {
+    return null
+  }
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('fiscalizai_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  } else {
+    const anonId = getAnonId()
+    if (anonId) config.headers['X-Anon-Id'] = anonId
+  }
   return config
 })
 

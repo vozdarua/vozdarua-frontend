@@ -16,6 +16,10 @@ onMounted(() => {
     .finally(() => { carregando.value = false })
 })
 
+function formatarData(iso) {
+  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
 function pedirConfirmacao(id) {
   confirmandoId.value = id
 }
@@ -62,8 +66,11 @@ function excluir(id) {
           <OccurrenceStatus :status="item.status" />
         </div>
         <p class="text-sm text-gray-600">{{ item.description }}</p>
+        <span v-if="item.address?.city" class="text-xs text-gray-500">
+          📍 {{ [item.address.neighborhood, item.address.city].filter(Boolean).join(', ') }}
+        </span>
         <div class="flex items-center justify-between gap-2">
-          <span class="text-xs text-gray-400">{{ new Date(item.createdAt).toLocaleDateString() }}</span>
+          <span class="text-xs text-gray-400">{{ formatarData(item.createdAt) }}</span>
 
           <div v-if="confirmandoId === item.id" class="flex items-center gap-3">
             <button

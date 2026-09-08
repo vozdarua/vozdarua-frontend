@@ -67,41 +67,44 @@ const dataResumo = computed(() => {
 })
 
 // ── Ações com contadores locais ────────────────────────────────────────────
+// jaConfirmou/jaResolveu persistem em localStorage por ocorrência: sem isso, reabrir o
+// mesmo pin (ou recarregar a página) esquecia o clique e deixava confirmar/resolver de
+// novo. O backend também recusa a repetição (por usuário logado ou X-Anon-Id) — isto aqui
+// é só o estado do botão; a garantia real é o servidor.
 const confirmacoes = ref(0)
 const resolucoes   = ref(0)
 const jaConfirmou  = ref(false)
 const jaResolveu   = ref(false)
 
-watch(() => props.ocorrencia?.id, () => {
+function jaFez(id, acao) {
+  try { return localStorage.getItem(`vozdarua_${acao}_${id}`) === '1' } catch { return false }
+}
+function marcarFeito(id, acao) {
+  try { localStorage.setItem(`vozdarua_${acao}_${id}`, '1') } catch { /* silencia */ }
+}
+
+watch(() => props.ocorrencia?.id, (id) => {
   confirmacoes.value = props.ocorrencia?.confirmIssue ?? 0
   resolucoes.value   = props.ocorrencia?.confirmResolve ?? 0
-  jaConfirmou.value  = false
-  jaResolveu.value   = false
+  jaConfirmou.value  = id ? jaFez(id, 'confirmado') : false
+  jaResolveu.value   = id ? jaFez(id, 'resolvido') : false
 }, { immediate: true })
 
 async function confirmarProblema() {
-  if (!props.ocorrencia) return
-  if (jaConfirmou.value) {
-    jaConfirmou.value = false
-    confirmacoes.value--
-  } else {
-    jaConfirmou.value = true
-    confirmacoes.value++
-    if (navigator.vibrate) navigator.vibrate(10)
-  }
+  if (!props.ocorrencia || jaConfirmou.value) return
+  jaConfirmou.value = true
+  confirmacoes.value++
+  marcarFeito(props.ocorrencia.id, 'confirmado')
+  if (navigator.vibrate) navigator.vibrate(10)
   try { await ocorrenciasService.confirmarOcorrencia(props.ocorrencia.id) } catch { /* silencia */ }
 }
 
 async function marcarResolvido() {
-  if (!props.ocorrencia) return
-  if (jaResolveu.value) {
-    jaResolveu.value = false
-    resolucoes.value--
-  } else {
-    jaResolveu.value = true
-    resolucoes.value++
-    if (navigator.vibrate) navigator.vibrate(10)
-  }
+  if (!props.ocorrencia || jaResolveu.value) return
+  jaResolveu.value = true
+  resolucoes.value++
+  marcarFeito(props.ocorrencia.id, 'resolvido')
+  if (navigator.vibrate) navigator.vibrate(10)
   try { await ocorrenciasService.marcarResolvida(props.ocorrencia.id) } catch { /* silencia */ }
 }
 
@@ -319,8 +322,9 @@ function iniciais(email) {
             <!-- Confirmar problema -->
             <button
               type="button"
+              :disabled="jaConfirmou"
               :class="jaConfirmou
-                ? 'bg-amber-500 border-amber-500 text-white'
+                ? 'bg-amber-500 border-amber-500 text-white cursor-not-allowed'
                 : 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100'"
               class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
               @click="confirmarProblema"
@@ -333,8 +337,9 @@ function iniciais(email) {
             <!-- Já foi resolvido -->
             <button
               type="button"
+              :disabled="jaResolveu"
               :class="jaResolveu
-                ? 'bg-emerald-600 border-emerald-600 text-white'
+                ? 'bg-emerald-600 border-emerald-600 text-white cursor-not-allowed'
                 : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'"
               class="flex-1 flex flex-col items-center gap-1.5 py-4 rounded-2xl border active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
               @click="marcarResolvido"
@@ -389,7 +394,14 @@ function iniciais(email) {
             <div v-else-if="comentarios.length > 0" class="flex flex-col gap-4">
               <div v-for="c in comentarios" :key="c.id" class="flex gap-2.5">
                 <div class="flex-shrink-0 h-8 w-8 rounded-full bg-teal-soft flex items-center justify-center text-xs font-bold text-teal">
-                  {{ iniciais(c.authorEmail) }}
+                  <svg v-if="!c.authorEmail" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                    <path d="M7 3.2c1-1.4 2.5-1.4 3.5-.2.5.6 1.5.6 2 0 1-1.2 2.5-1.2 3.5.2.8 1 1 2.2.8 3.3H6.2c-.2-1.1 0-2.3.8-3.3z" />
+                    <rect x="2" y="6.3" width="20" height="2.2" rx="1.1" />
+                    <circle cx="8" cy="15" r="3.2" />
+                    <circle cx="16" cy="15" r="3.2" />
+                    <rect x="10.8" y="14.3" width="2.4" height="1.4" rx="0.7" />
+                  </svg>
+                  <template v-else>{{ iniciais(c.authorEmail) }}</template>
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-baseline gap-2 flex-wrap">
