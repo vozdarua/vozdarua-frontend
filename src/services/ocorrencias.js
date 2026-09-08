@@ -1,7 +1,7 @@
 import api from './api'
 
-export function listarOcorrencias(cidade) {
-  const params = cidade ? { city: cidade } : {}
+export function listarOcorrencias(cityId) {
+  const params = cityId ? { cityId } : {}
   return api.get('/issues', { params }).then((r) => r.data)
 }
 

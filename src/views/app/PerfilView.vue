@@ -19,9 +19,10 @@ const mensagem = ref('')
 const mensagemTipo = ref('ok') // ok | erro
 const stats = ref({ inCity: 0, resolved: 0, open: 0 })
 
-onMounted(() => {
+onMounted(async () => {
   if (!isLoggedIn.value) router.push('/app/mapa')
-  authService.estatisticasUsuario(cidadeStore.cidadeAtual.nome)
+  await cidadeStore.init()
+  authService.estatisticasUsuario(cidadeStore.cidadeAtual.id)
     .then((s) => { stats.value = s })
     .catch(() => {})
 })

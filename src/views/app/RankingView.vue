@@ -1,12 +1,14 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useOcorrenciasStore } from '@/stores/ocorrencias'
 import { maskEmail } from '@/utils/email'
+import * as cidadesService from '@/services/cidades'
 
 const ocorrencias = useOcorrenciasStore()
 
 onMounted(() => {
   if (!ocorrencias.lista.length) ocorrencias.carregar().catch(() => {})
+  cidadesService.rankingCidades().then((r) => { rankingCidadesRaw.value = r }).catch(() => {})
 })
 
 // Top contribuidores por número de ocorrências registradas (não anônimas)
@@ -40,20 +42,14 @@ const rankingContribuidores = computed(() => {
     }))
 })
 
-// Cidades com mais ocorrências
-const rankingCidades = computed(() => {
-  const counts = {}
-  for (const oc of ocorrencias.lista) {
-    const nome = oc.address?.city ?? oc.address?.town ?? oc.address?.municipality ?? 'Não informado'
-    if (!counts[nome]) counts[nome] = { nome, total: 0, resolvidas: 0 }
-    counts[nome].total++
-    if (oc.status?.name === 'Resolvido') counts[nome].resolvidas++
-  }
-  return Object.values(counts)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 10)
-    .map(c => ({ ...c, taxaResolucao: c.total > 0 ? Math.round((c.resolvidas / c.total) * 100) : 0 }))
-})
+// Cidades com mais ocorrências (agregado no backend via GET /cities/ranking)
+const rankingCidadesRaw = ref([])
+const rankingCidades = computed(() =>
+  rankingCidadesRaw.value.map(c => ({
+    ...c,
+    taxaResolucao: c.total > 0 ? Math.round((c.resolved / c.total) * 100) : 0,
+  }))
+)
 
 const maxContrib = computed(() => rankingContribuidores.value[0]?.total ?? 1)
 const maxCidade  = computed(() => rankingCidades.value[0]?.total ?? 1)
@@ -160,9 +156,9 @@ const avatarColors = [
         </div>
 
         <div v-else class="flex flex-col gap-1">
-          <div v-for="(cidade, i) in rankingCidades" :key="cidade.nome" class="flex items-center gap-3 py-2">
+          <div v-for="(cidade, i) in rankingCidades" :key="cidade.cityId" class="flex items-center gap-3 py-2">
             <span class="text-xs font-bold text-gray-300 w-4 text-right flex-shrink-0">{{ i + 1 }}</span>
-            <span class="text-sm text-gray-700 flex-1 truncate">{{ cidade.nome }}</span>
+            <span class="text-sm text-gray-700 flex-1 truncate">{{ cidade.name }}</span>
             <div class="w-24 h-2 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
               <div
                 class="h-full rounded-full bg-violet-400 transition-all duration-500"

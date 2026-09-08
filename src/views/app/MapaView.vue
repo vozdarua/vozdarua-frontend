@@ -26,13 +26,14 @@ function onResize() { isMobile.value = window.innerWidth < 1024 }
 const mapCenter = ref([cidadeStore.cidadeAtual.lat, cidadeStore.cidadeAtual.lng])
 
 watch(() => cidadeStore.cidadeAtual, (cidade) => {
-  mapCenter.value = [cidade.lat, cidade.lng]
+  if (cidade.lat && cidade.lng) mapCenter.value = [cidade.lat, cidade.lng]
   ocorrencias.lista = []
-  ocorrencias.carregar(cidade.nome).catch(() => {})
+  ocorrencias.carregar(cidade.id).catch(() => {})
 })
 
-onMounted(() => {
-  ocorrencias.carregar(cidadeStore.cidadeAtual.nome).catch(() => {})
+onMounted(async () => {
+  await cidadeStore.init()
+  ocorrencias.carregar(cidadeStore.cidadeAtual.id).catch(() => {})
   window.addEventListener('resize', onResize)
 })
 onUnmounted(() => window.removeEventListener('resize', onResize))

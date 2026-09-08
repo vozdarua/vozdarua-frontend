@@ -21,8 +21,8 @@ export function perfilAtual() {
   return api.get('/user/me').then((r) => r.data)
 }
 
-export function estatisticasUsuario(city) {
-  return api.get('/user/me/stats', { params: { city } }).then((r) => r.data)
+export function estatisticasUsuario(cityId) {
+  return api.get('/user/me/stats', { params: { cityId } }).then((r) => r.data)
 }
 
 export function minhasOcorrencias() {

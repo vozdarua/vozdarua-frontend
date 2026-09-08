@@ -1,32 +1,63 @@
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
-import { useCidadeStore, TODAS_CIDADES, cidadesProximas } from '@/stores/cidade'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useCidadeStore } from '@/stores/cidade'
+import { useGeolocationStore } from '@/stores/geolocation'
+import { useGeolocation } from '@/composables/useGeolocation'
+import * as cidadesService from '@/services/cidades'
 
 const emit = defineEmits(['close'])
 
 const cidadeStore = useCidadeStore()
+const geolocationStore = useGeolocationStore()
+const { geocodeAddress } = useGeolocation()
+
 const busca = ref('')
 const searchInput = ref(null)
+const resultados = ref([])
+const proximas = ref([])
+let buscaTimeout = null
 
-const proximas = computed(() => cidadesProximas(cidadeStore.cidadeAtual, 5))
-
-const resultados = computed(() => {
-  const q = busca.value.trim().toLowerCase()
-  if (!q) return []
-  return TODAS_CIDADES
-    .filter(c => c.nome.toLowerCase().includes(q) || c.uf.toLowerCase().includes(q))
-    .slice(0, 10)
+watch(busca, (q) => {
+  clearTimeout(buscaTimeout)
+  const termo = q.trim()
+  if (!termo) {
+    resultados.value = []
+    return
+  }
+  buscaTimeout = setTimeout(() => {
+    cidadesService.buscarCidades({ search: termo }).then((r) => { resultados.value = r }).catch(() => { resultados.value = [] })
+  }, 300)
 })
 
-function selecionar(cidade) {
-  cidadeStore.trocar(cidade.id)
-  emit('close')
+async function carregarProximas() {
+  try {
+    let lat = geolocationStore.permitido ? geolocationStore.lat : null
+    let lng = geolocationStore.permitido ? geolocationStore.lng : null
+    if (!lat || !lng) {
+      const coords = await geocodeAddress({ cidade: cidadeStore.cidadeAtual.nome, estado: cidadeStore.cidadeAtual.uf })
+      lat = coords.lat
+      lng = coords.lng
+    }
+    proximas.value = await cidadesService.cidadesProximas(lat, lng)
+  } catch {
+    // Sem GPS e sem geocode possível - some a seção em vez de travar o modal.
+    proximas.value = []
+  }
 }
 
-watch(() => true, async () => {
+function selecionar(cidade) {
+  cidadeStore.selecionar(cidade)
+  emit('close')
+  geocodeAddress({ cidade: cidade.name ?? cidade.nome, estado: cidade.uf })
+    .then(({ lat, lng }) => cidadeStore.setCoordsAtual(lat, lng))
+    .catch(() => {}) // mantém o centro do mapa anterior, não é fatal
+}
+
+onMounted(async () => {
   await nextTick()
   searchInput.value?.focus()
-}, { immediate: true })
+  carregarProximas()
+})
 </script>
 
 <template>
@@ -95,8 +126,8 @@ watch(() => true, async () => {
               @click="selecionar(cidade)"
             >
               <span class="text-teal text-sm font-bold self-center">{{ cidade.id === cidadeStore.cidadeAtual.id ? '✓' : '' }}</span>
-              <span class="text-sm self-center" :class="cidade.id === cidadeStore.cidadeAtual.id ? 'font-semibold text-teal' : 'text-gray-800'">{{ cidade.nome }}</span>
-              <span class="text-xs text-gray-400 font-medium self-center bg-gray-100 rounded px-1.5 py-0.5 ml-2">{{ cidade.uf }}</span>
+              <span class="text-sm self-center" :class="cidade.id === cidadeStore.cidadeAtual.id ? 'font-semibold text-teal' : 'text-gray-800'">{{ cidade.name }}</span>
+              <span class="text-xs text-gray-400 font-medium self-center bg-gray-100 rounded px-1.5 py-0.5 ml-2">{{ cidade.state?.uf }}</span>
             </button>
           </div>
         </template>
@@ -117,24 +148,26 @@ watch(() => true, async () => {
           </button>
 
           <!-- Cidades próximas -->
-          <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1 px-2">Cidades próximas</p>
-          <div class="flex flex-col">
-            <button
-              v-for="cidade in proximas"
-              :key="cidade.id"
-              type="button"
-              class="grid w-full px-3 py-3 rounded-2xl text-left hover:bg-gray-50 transition-colors"
-              style="grid-template-columns: 1.5rem 1fr auto"
-              @click="selecionar(cidade)"
-            >
-              <span class="self-center" />
-              <span class="text-sm text-gray-800 self-center">{{ cidade.nome }}</span>
-              <div class="flex items-center gap-1.5 ml-2 self-center">
-                <span class="text-xs text-gray-400">{{ cidade.distKm }} km</span>
-                <span class="text-xs text-gray-400 font-medium bg-gray-100 rounded px-1.5 py-0.5">{{ cidade.uf }}</span>
-              </div>
-            </button>
-          </div>
+          <template v-if="proximas.length">
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1 px-2">Cidades próximas</p>
+            <div class="flex flex-col">
+              <button
+                v-for="cidade in proximas"
+                :key="cidade.cityId ?? cidade.name"
+                type="button"
+                class="grid w-full px-3 py-3 rounded-2xl text-left hover:bg-gray-50 transition-colors"
+                style="grid-template-columns: 1.5rem 1fr auto"
+                @click="selecionar(cidade)"
+              >
+                <span class="self-center" />
+                <span class="text-sm text-gray-800 self-center">{{ cidade.name }}</span>
+                <div class="flex items-center gap-1.5 ml-2 self-center">
+                  <span class="text-xs text-gray-400">{{ cidade.distanceKm }} km</span>
+                  <span class="text-xs text-gray-400 font-medium bg-gray-100 rounded px-1.5 py-0.5">{{ cidade.uf }}</span>
+                </div>
+              </button>
+            </div>
+          </template>
         </template>
       </div>
     </div>
