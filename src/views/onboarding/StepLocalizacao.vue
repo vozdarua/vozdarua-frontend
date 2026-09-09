@@ -114,7 +114,10 @@ async function permitirGps() {
   erro.value = ''
   try {
     await pedirPermissao()
-    continuar()
+    sugestaoLat.value = geo.lat
+    sugestaoLng.value = geo.lng
+    fase.value = 'confirmando'
+    nextTick(() => initMiniMap())
   } catch {
     fase.value = 'cep'
   } finally {
