@@ -21,8 +21,10 @@ export function useGeolocation() {
           try {
             const endereco = await reverseGeocode(lat, lng)
             store.setEndereco(endereco)
-          } catch {
-            // ignora falha de reverse geocode, mantém coordenadas
+          } catch (e) {
+            // Ignora a falha de propósito (GPS ainda funciona sem o texto do endereço),
+            // mas loga - senão a causa (ex.: VITE_NOMINATIM_URL quebrada) fica invisível.
+            console.error('Falha ao reverse-geocodificar coordenadas GPS:', e)
           }
           resolve(store)
         },
@@ -38,6 +40,12 @@ export function useGeolocation() {
     const { data } = await axios.get(`${NOMINATIM_URL}/reverse`, {
       params: { lat, lon: lng, format: 'json' },
     })
+    // Mesmo motivo do Array.isArray em geocodeAddress: se NOMINATIM_URL vier undefined,
+    // o fallback de SPA devolve o index.html (uma string) com 200 - "data.address" numa
+    // string é undefined, e sem essa checagem isso virava endereço vazio em silêncio.
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+      throw new Error('Resposta inesperada do serviço de geocodificação')
+    }
     const addr = data.address || {}
     return {
       cidade: addr.city || addr.town || addr.municipality || '',
