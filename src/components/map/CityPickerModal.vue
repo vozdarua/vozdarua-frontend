@@ -25,7 +25,7 @@ watch(busca, (q) => {
     return
   }
   buscaTimeout = setTimeout(() => {
-    cidadesService.buscarCidades({ search: termo }).then((r) => { resultados.value = r }).catch(() => { resultados.value = [] })
+    cidadesService.buscarCidades({ search: termo }).then((r) => { resultados.value = r }).catch((e) => { console.error('Falha ao buscar cidades:', e); resultados.value = [] })
   }, 300)
 })
 
@@ -39,8 +39,10 @@ async function carregarProximas() {
       lng = coords.lng
     }
     proximas.value = await cidadesService.cidadesProximas(lat, lng)
-  } catch {
-    // Sem GPS e sem geocode possível - some a seção em vez de travar o modal.
+  } catch (e) {
+    // Sem GPS e sem geocode possível - some a seção em vez de travar o modal, mas loga
+    // pra não ficar invisível (causa comum: VITE_NOMINATIM_URL não setada no build).
+    console.error('Falha ao carregar cidades próximas:', e)
     proximas.value = []
   }
 }
@@ -50,7 +52,7 @@ function selecionar(cidade) {
   emit('close')
   geocodeAddress({ cidade: cidade.name ?? cidade.nome, estado: cidade.uf })
     .then(({ lat, lng }) => cidadeStore.setCoordsAtual(lat, lng))
-    .catch(() => {}) // mantém o centro do mapa anterior, não é fatal
+    .catch((e) => console.error('Falha ao geocodificar cidade selecionada:', e)) // mantém o centro do mapa anterior, não é fatal
 }
 
 onMounted(async () => {
