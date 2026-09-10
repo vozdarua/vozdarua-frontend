@@ -59,7 +59,7 @@ export function useGeolocation() {
   async function geocodeAddress({ rua, bairro, cidade, estado }) {
     const q = [rua, bairro, cidade, estado].filter(Boolean).join(', ')
     const { data } = await axios.get(`${NOMINATIM_URL}/search`, {
-      params: { q, format: 'json', limit: 1 },
+      params: { q, format: 'json', limit: 1, addressdetails: 1 },
     })
     // Array.isArray (não só "data.length === 0"): se NOMINATIM_URL vier undefined (env var
     // de build não setada em produção), a URL vira relativa ("undefined/search") e o fallback
@@ -71,7 +71,11 @@ export function useGeolocation() {
     if (!result || Number.isNaN(lat) || Number.isNaN(lng)) {
       throw new Error('Endereço não encontrado')
     }
-    return { lat, lng }
+    // O OSM só geocodifica o número exato quando o prédio está mapeado com addr:housenumber;
+    // muita rua no Brasil não tem isso, e o Nominatim cai pro centro da via sem avisar
+    // (addresstype "road"). Reportamos isso pro caller mostrar que o pin é aproximado.
+    const exato = !!result.address?.house_number
+    return { lat, lng, exato }
   }
 
   return { pedirPermissao, reverseGeocode, geocodeAddress, store }

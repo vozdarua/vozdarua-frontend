@@ -14,6 +14,7 @@ function iniciais(email) {
 function sair() {
   open.value = false
   logout()
+  router.push('/app/mapa')
 }
 
 function irPerfil() {

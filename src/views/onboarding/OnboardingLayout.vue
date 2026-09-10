@@ -24,16 +24,6 @@ const STEP_COMPONENTS = {
   sucesso: StepSucesso,
 }
 
-const STEP_LABELS = {
-  localizacao: { num: 1, label: 'Localização',   title: 'Onde aconteceu?' },
-  foto:        { num: 2, label: 'Foto',           title: 'Tem uma foto?' },
-  categoria:   { num: 3, label: 'Categoria',      title: 'O que é isso?' },
-  descricao:   { num: 4, label: 'Descrição',      title: 'Descreva o problema' },
-  confirmacao: { num: 5, label: 'Confirmação',    title: 'Está tudo certo?' },
-  cadastro:    { num: 6, label: 'Conta',          title: 'Quase lá!' },
-  sucesso:     { num: 7, label: 'Concluído',      title: 'Registrado!' },
-}
-
 const router = useRouter()
 const ocorrencias = useOcorrenciasStore()
 const geo = useGeolocationStore()
@@ -110,56 +100,11 @@ function onMarkerDragEnd(e) {
         <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <LMarker v-if="markerPos" :lat-lng="markerPos" :draggable="true" @dragend="onMarkerDragEnd" />
       </LMap>
-
-      <!-- Indicador de passo sobre o mapa -->
-      <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow">
-        <template v-for="(s, i) in STEPS.slice(0, -1)" :key="s">
-          <div
-            class="h-2 rounded-full transition-all"
-            :class="[
-              i < stepIndex ? 'bg-teal w-2' : i === stepIndex ? 'bg-teal w-5' : 'bg-gray-200 w-2'
-            ]"
-          />
-        </template>
-        <span class="ml-2 text-xs font-semibold text-gray-600">
-          {{ STEP_LABELS[currentStep]?.label }}
-        </span>
-      </div>
     </div>
 
     <!-- Painel do wizard (mobile: full screen | desktop: coluna direita) -->
     <div class="w-full lg:w-[420px] xl:w-[460px] flex flex-col h-full lg:h-screen lg:border-l border-gray-200 bg-white">
       <AppTopbar :show-back="true" title="Registrar ocorrência" @back="back" />
-
-      <!-- Stepper (mobile) -->
-      <div class="lg:hidden px-5 py-3 border-b border-gray-100">
-        <div class="flex items-center">
-          <template v-for="(s, i) in STEPS.slice(0, -1)" :key="s">
-            <!-- Círculo do passo -->
-            <div class="flex flex-col items-center flex-shrink-0" style="min-width:28px">
-              <div
-                class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
-                :class="
-                  i < stepIndex ? 'bg-teal text-white' :
-                  i === stepIndex ? 'bg-teal text-white ring-4 ring-teal/20' :
-                  'bg-gray-100 text-gray-400'
-                "
-              >
-                <span v-if="i < stepIndex">✓</span>
-                <span v-else>{{ i + 1 }}</span>
-              </div>
-            </div>
-            <!-- Linha conectora -->
-            <div v-if="i < STEPS.slice(0, -1).length - 1" class="flex-1 h-0.5 mx-1 rounded-full transition-all duration-300"
-              :class="i < stepIndex ? 'bg-teal' : 'bg-gray-200'"
-            />
-          </template>
-        </div>
-        <!-- Label do passo atual -->
-        <p class="text-xs font-semibold text-teal mt-2 text-center tracking-wide">
-          {{ STEP_LABELS[currentStep]?.label }}
-        </p>
-      </div>
 
       <div class="flex-1 overflow-y-auto pb-20 lg:pb-0" :key="currentStep">
         <component :is="currentComponent" @next="next" @back="back" @finalizar="finalizar" />

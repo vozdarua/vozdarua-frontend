@@ -41,6 +41,7 @@ export const useAuthStore = defineStore('auth', {
     },
     setToken(token) {
       this.token = token
+      this.anonimo = false
       localStorage.setItem('fiscalizai_token', token)
     },
     logout() {
