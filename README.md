@@ -1,4 +1,4 @@
-# fiscalizaí — Frontend (Vue 3 PWA)
+# Voz da Rua — Frontend (Vue 3 PWA)
 
 Plataforma cívica de fiscalização urbana da organização **Tapioca**.
 
