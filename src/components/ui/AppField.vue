@@ -47,7 +47,7 @@ function onInput(e) {
         :placeholder="placeholder"
         :aria-describedby="error ? errorId : undefined"
         :aria-invalid="!!error || undefined"
-        class="peer w-full rounded-xl border border-gray-200 px-3.5 pt-5 pb-2.5 text-sm text-gray-800 outline-none transition-all duration-150 focus:border-teal focus:ring-2 focus:ring-teal/20 placeholder-transparent"
+        class="peer w-full rounded-xl border border-gray-300 px-3.5 pt-5 pb-2.5 text-sm text-gray-800 outline-none transition-all duration-150 focus:border-teal focus:ring-2 focus:ring-teal/20 placeholder-transparent"
         :class="[error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : '', isPassword ? 'pr-10' : '']"
         @input="onInput"
       />

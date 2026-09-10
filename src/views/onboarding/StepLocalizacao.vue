@@ -4,6 +4,7 @@ import L from 'leaflet'
 import axios from 'axios'
 import { useGeolocationStore } from '@/stores/geolocation'
 import { useOcorrenciasStore } from '@/stores/ocorrencias'
+import { useCidadeStore } from '@/stores/cidade'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useViaCep } from '@/composables/useViaCep'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -13,6 +14,7 @@ const emit = defineEmits(['next'])
 
 const geo = useGeolocationStore()
 const ocorrencias = useOcorrenciasStore()
+const cidadeStore = useCidadeStore()
 const { pedirPermissao, geocodeAddress } = useGeolocation()
 const { buscarCep } = useViaCep()
 
@@ -39,19 +41,28 @@ async function buscarRua(q) {
   if (q.length < 3) { sugestoes.value = []; return }
   buscando.value = true
   try {
+    // Inclui a cidade selecionada na query pra enviesar o geocoding pra ela, e depois
+    // reordena o resultado: mesmo com o viés, o Nominatim ainda pode devolver ruas
+    // homônimas de outras cidades, então elas não devem ficar à frente das da cidade certa.
+    const cidadeAtual = cidadeStore.cidadeAtual
+    const query = [q, cidadeAtual.nome, cidadeAtual.uf, 'Brasil'].filter(Boolean).join(', ')
     const { data } = await axios.get('https://nominatim.openstreetmap.org/search', {
-      params: { q: `${q}, Brasil`, format: 'json', limit: 6, addressdetails: 1, countrycodes: 'br' },
+      params: { q: query, format: 'json', limit: 6, addressdetails: 1, countrycodes: 'br' },
       headers: { 'Accept-Language': 'pt-BR' },
     })
-    sugestoes.value = data.map(item => ({
-      label: item.display_name,
-      rua: item.address.road ?? item.address.pedestrian ?? item.address.neighbourhood ?? '',
-      bairro: item.address.suburb ?? item.address.neighbourhood ?? item.address.quarter ?? '',
-      cidade: item.address.city ?? item.address.town ?? item.address.village ?? '',
-      estado: item.address.state ?? '',
-      lat: parseFloat(item.lat),
-      lng: parseFloat(item.lon),
-    }))
+    sugestoes.value = data
+      .map(item => ({
+        label: item.display_name,
+        rua: item.address.road ?? item.address.pedestrian ?? item.address.neighbourhood ?? '',
+        bairro: item.address.suburb ?? item.address.neighbourhood ?? item.address.quarter ?? '',
+        cidade: item.address.city ?? item.address.town ?? item.address.village ?? '',
+        estado: item.address.state ?? '',
+        lat: parseFloat(item.lat),
+        lng: parseFloat(item.lon),
+      }))
+      .sort((a, b) =>
+        (b.cidade === cidadeAtual.nome ? 1 : 0) - (a.cidade === cidadeAtual.nome ? 1 : 0)
+      )
   } catch {
     sugestoes.value = []
   } finally {
@@ -156,6 +167,69 @@ async function confirmarManual() {
   }
 }
 
+// true quando o pin não caiu no número exato (seja por prédio próximo, seja pelo
+// centro da rua) — StepLocalizacao avisa o usuário disso.
+const numeroAproximado = ref(false)
+// Número do prédio já mapeado no OSM que usamos como aproximação (null se não achou nenhum).
+const numeroProximoEncontrado = ref(null)
+
+// Busca no OSM (via Overpass) prédios já mapeados com addr:housenumber nesta rua, perto do
+// ponto informado, e devolve o mais próximo NUMERICAMENTE do número procurado — ex.: procurando
+// 695 sem essa casa mapeada, prefere o prédio 650 mapeado a deixar o pin solto no centro da via.
+async function buscarNumeroProximo(numeroAlvo, rua, lat, lng) {
+  const query = `[out:json][timeout:15];(node["addr:housenumber"]["addr:street"="${rua}"](around:700,${lat},${lng});way["addr:housenumber"]["addr:street"="${rua}"](around:700,${lat},${lng}););out center;`
+  const { data } = await axios.post('https://overpass-api.de/api/interpreter', query, {
+    headers: { 'Content-Type': 'text/plain' },
+  })
+  const candidatos = (data.elements ?? [])
+    .map(el => {
+      const num = parseInt(el.tags?.['addr:housenumber'], 10)
+      const pos = el.type === 'node' ? { lat: el.lat, lng: el.lon } : el.center ? { lat: el.center.lat, lng: el.center.lon } : null
+      return (Number.isNaN(num) || !pos) ? null : { numero: num, ...pos }
+    })
+    .filter(Boolean)
+  if (!candidatos.length) return null
+  candidatos.sort((a, b) => Math.abs(a.numero - numeroAlvo) - Math.abs(b.numero - numeroAlvo))
+  return candidatos[0]
+}
+
+// Refina o pin com o número informado: re-geocodifica "rua + número" e move o marcador
+// (mini mapa no mobile, mapa principal via geo store no desktop) pro ponto mais próximo.
+async function refinarPorNumero() {
+  if (!numero.value) return
+  const numeroAlvo = parseInt(numero.value, 10)
+  carregando.value = true
+  numeroAproximado.value = false
+  numeroProximoEncontrado.value = null
+  try {
+    const { lat, lng, exato } = await geocodeAddress({ rua: `${geo.rua} ${numero.value}`, bairro: geo.bairro, cidade: geo.cidade, estado: geo.estado })
+    let pinLat = lat
+    let pinLng = lng
+
+    if (!exato && !Number.isNaN(numeroAlvo)) {
+      const proximo = await buscarNumeroProximo(numeroAlvo, geo.rua, lat, lng).catch(() => null)
+      if (proximo) {
+        pinLat = proximo.lat
+        pinLng = proximo.lng
+        numeroProximoEncontrado.value = proximo.numero
+      }
+    }
+
+    sugestaoLat.value = pinLat
+    sugestaoLng.value = pinLng
+    numeroAproximado.value = !exato
+    geo.setCoords({ lat: pinLat, lng: pinLng })
+    if (miniMap) {
+      miniMap.flyTo([pinLat, pinLng], 17, { duration: 1 })
+      miniMap.eachLayer(l => { if (l instanceof L.Marker) l.setLatLng([pinLat, pinLng]) })
+    }
+  } catch {
+    // Não achou o número exato: mantém o pin onde estava (endereço/rua já confirmados)
+  } finally {
+    carregando.value = false
+  }
+}
+
 function initMiniMap() {
   if (!miniMapEl.value) return
   if (miniMap) { miniMap.remove(); miniMap = null }
@@ -222,7 +296,7 @@ function continuar() {
             type="text"
             placeholder="Buscar rua, bairro ou cidade..."
             autocomplete="off"
-            class="w-full rounded-xl border border-gray-200 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition"
+            class="w-full rounded-xl border border-gray-300 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition"
             @input="onBuscaInput"
           />
           <span v-if="buscando" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-teal text-base animate-spin">⟳</span>
@@ -231,7 +305,7 @@ function continuar() {
         <!-- Dropdown de sugestões -->
         <ul
           v-if="sugestoes.length"
-          class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+          class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg overflow-hidden"
         >
           <li
             v-for="s in sugestoes"
@@ -252,10 +326,10 @@ function continuar() {
         <div class="flex-1 h-px bg-gray-100" />
       </div>
 
-      <!-- GPS como alternativa -->
+      <!-- GPS como alternativa: destacado em teal para chamar mais atenção que o campo de busca -->
       <button
         type="button"
-        class="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-60"
+        class="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl border-2 border-teal bg-teal-soft text-sm font-bold text-teal-dark hover:bg-teal/10 transition-colors disabled:opacity-60"
         :disabled="carregando"
         @click="permitirGps"
       >
@@ -282,8 +356,8 @@ function continuar() {
             inputmode="numeric"
             placeholder="00000-000"
             maxlength="9"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition pr-10"
-            :class="erro ? 'border-red-300' : ''"
+            class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition pr-10"
+            :class="erro ? 'border-red-400' : ''"
             @input="onCepInput"
           />
           <!-- Spinner dentro do campo -->
@@ -337,7 +411,7 @@ function continuar() {
             type="text"
             placeholder="Buscar rua, bairro ou cidade..."
             autocomplete="off"
-            class="w-full rounded-xl border border-gray-200 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition"
+            class="w-full rounded-xl border border-gray-300 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition"
             @input="onBuscaInput"
           />
           <span v-if="buscando" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-teal text-base animate-spin">⟳</span>
@@ -345,7 +419,7 @@ function continuar() {
 
         <ul
           v-if="sugestoes.length"
-          class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+          class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg overflow-hidden"
         >
           <li
             v-for="s in sugestoes"
@@ -381,13 +455,19 @@ function continuar() {
             type="tel"
             inputmode="numeric"
             placeholder="Ex: 1234"
-            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition pr-10"
+            class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal/50 focus:border-teal transition pr-10"
             @change="refinarPorNumero"
           />
           <span v-if="carregando" class="absolute right-3 top-1/2 -translate-y-1/2 text-teal text-base animate-spin">⟳</span>
           <span v-else-if="numero" class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-sm">✓</span>
         </div>
-        <p class="text-[11px] text-gray-400">Preencha para posicionar o pin no número exato.</p>
+        <p v-if="numeroAproximado && numeroProximoEncontrado" class="text-[11px] text-amber-600">
+          Número exato não mapeado — usamos o prédio nº {{ numeroProximoEncontrado }}, o mais próximo cadastrado nesta rua. Arraste o pin se necessário.
+        </p>
+        <p v-else-if="numeroAproximado" class="text-[11px] text-amber-600">
+          Não encontramos o número exato nesta rua — o pin ficou no centro dela. Arraste-o para o local certo.
+        </p>
+        <p v-else class="text-[11px] text-gray-400">Preencha para posicionar o pin no número exato.</p>
       </div>
 
       <!-- Mobile: mini mapa inline -->
